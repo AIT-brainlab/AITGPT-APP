@@ -31,39 +31,20 @@ ENV/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-media/
-staticfiles/
-**/logs/*.log
-!**/logs/.gitkeep
-
-# Node
-node_modules/
-dist-ssr/
-*.local
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+/media
+/staticfiles
+/logs/*.log
+!/logs/.gitkeep
 
 # Environment variables
 .env
-**/.env
 
 # IDE
 .vscode/
-!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
-*.sw?
 *~
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
 
 # OS
 .DS_Store
@@ -77,6 +58,3 @@ htmlcov/
 # Type checking
 .mypy_cache/
 .pytype/
-
-# Claude Code
-.claude/
