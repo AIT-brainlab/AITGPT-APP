@@ -20,5 +20,5 @@ from django.urls import include, path
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("django_module/", include("django_module.urls")),
-    # path('api/tasks/', include('tasks.urls')),  # TODO: Enable with tasks app after Django 6.0 compat fix
+    path('api/tasks/', include('tasks.urls')), 
 ]

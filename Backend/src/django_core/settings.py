@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'django_module',
-    # 'tasks',  # TODO: Enable after fixing CheckConstraint(check=...) → CheckConstraint(condition=...) in tasks/models.py for Django 6.0 compat
+    'tasks', 
 ]
 
 MIDDLEWARE = [
