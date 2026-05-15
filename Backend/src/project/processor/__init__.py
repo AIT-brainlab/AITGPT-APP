@@ -1,1 +1,0 @@
-from project.processor.works import cli # type: ignore

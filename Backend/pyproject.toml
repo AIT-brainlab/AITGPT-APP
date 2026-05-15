@@ -24,9 +24,3 @@ dev = [
     "pytest>=9.0.3",
 ]
 
-[tool.uv]
-package = true
-
-[project.scripts]
-python-project-starter = "project:cli"
-
