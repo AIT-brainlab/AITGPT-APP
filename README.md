@@ -2,7 +2,7 @@
 
 A full-stack AI-powered chatbot application for the Asian Institute of Technology (AIT). The system provides role-based conversational assistance for seven user types: guest, candidate (prospective student), student, faculty, staff, alumni, and management. The frontend is a React/TypeScript application served as an overlay widget on a university landing page. The backend is a Django REST API that authenticates users, proxies chat requests to an external Langflow AI service, and logs all interactions to a PostgreSQL database.
 
----
+----
 
 ## Table of Contents
 
@@ -16,7 +16,7 @@ A full-stack AI-powered chatbot application for the Asian Institute of Technolog
 8. [Environment Variables](#8-environment-variables)
 9. [Debugging Guide](#9-debugging-guide)
 
----
+----
 
 ## 1. Project Overview
 

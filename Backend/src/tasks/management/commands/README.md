@@ -101,19 +101,19 @@ The admin user can:
 
 ```bash
 # Get all chat logs (requires admin authentication token)
-curl -X GET http://localhost:8000/api/tasks/chat-log/ \
+curl -X GET http://localhost:8100/api/tasks/chat-log/ \
   -H "Authorization: Token <admin-token>"
 
 # Filter by user_id
-curl -X GET "http://localhost:8000/api/tasks/chat-log/?user_id=<user-uuid>" \
+curl -X GET "http://localhost:8100/api/tasks/chat-log/?user_id=<user-uuid>" \
   -H "Authorization: Token <admin-token>"
 
 # Filter by session_id
-curl -X GET "http://localhost:8000/api/tasks/chat-log/?session_id=<session-id>" \
+curl -X GET "http://localhost:8100/api/tasks/chat-log/?session_id=<session-id>" \
   -H "Authorization: Token <admin-token>"
 
 # Pagination
-curl -X GET "http://localhost:8000/api/tasks/chat-log/?limit=50&offset=0" \
+curl -X GET "http://localhost:8100/api/tasks/chat-log/?limit=50&offset=0" \
   -H "Authorization: Token <admin-token>"
 ```
 

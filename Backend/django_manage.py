@@ -2,6 +2,12 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from pathlib import Path
+
+# Add src/ to sys.path so Django can find apps located under src/
+# Always insert at 0 even if uv already added it later — we need it before the project root
+SRC_DIR = str(Path(__file__).resolve().parent / 'src')
+sys.path.insert(0, SRC_DIR)
 
 
 def main():
