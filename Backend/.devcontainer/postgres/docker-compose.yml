@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: aitgpt_backend_postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-aitgpt_dev}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-devpassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - devcontainer
+
+volumes:
+  postgres_data:
+
+networks:
+  devcontainer:
+    driver: bridge
