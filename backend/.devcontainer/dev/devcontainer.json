@@ -18,7 +18,7 @@
 		"IS_DEVCONTAINER": "True"
 	},
 	"features": {
-		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+		"ghcr.io/devcontainers/features/docker-outside-of-docker:1.10.0": {
 			"moby": true,
 			"installDockerBuildx": true,
 			"installDockerComposeSwitch": true,
@@ -47,7 +47,7 @@
 	"forwardPorts": [8000]
 
  	// Use 'postCreateCommand' to run commands after the container is created.
- 	"postCreateCommand": "python django_manage.py migrate --noinput"
+ 	// "postCreateCommand": "python django_manage.py migrate --noinput"
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
