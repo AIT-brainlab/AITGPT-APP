@@ -59,3 +59,4 @@ htmlcov/
 .pytype/
 
 !.devcontainer/dev/.env
+!.devcontainer/postgres/.env
