@@ -19,8 +19,15 @@ services:
       - uv_cache:/Projects/${PROJECT_NAME}/.uv_cache
       # Forwards the local Docker socket to the container.
       - /var/run/docker.sock:/var/run/docker-host.sock 
+    networks:
+      - default
+      - aitgpt_network
 
 volumes:
   venv:
   python:
   uv_cache:
+
+networks:
+  aitgpt_network:
+    external: true
