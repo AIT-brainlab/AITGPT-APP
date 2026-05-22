@@ -17,3 +17,5 @@ if [ "$IS_DEVCONTAINER" = "True" ]; then
     echo "-- Installing CLI"
     uv run $PROJECT_NAME --install-completion
 fi
+
+uv run python django_manage.py migrate --noinput
