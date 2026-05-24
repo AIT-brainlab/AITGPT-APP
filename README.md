@@ -22,8 +22,8 @@ A full-stack AI-powered chatbot application for the Asian Institute of Technolog
 
 AITGPT consists of two main services:
 
-- **Frontend**: A React 18 single-page application built with Vite, styled with Tailwind CSS, and using Radix UI primitives. It renders a floating chat widget over a university landing page.
-- **Backend**: A Django 5 REST API using Django REST Framework, PostgreSQL for persistence, and Token Authentication for session management.
+- **frontend**: A React 18 single-page application built with Vite, styled with Tailwind CSS, and using Radix UI primitives. It renders a floating chat widget over a university landing page.
+- **backend**: A Django 5 REST API using Django REST Framework, PostgreSQL for persistence, and Token Authentication for session management.
 
 The AI intelligence is provided by an external **Langflow** service. The backend acts as a proxy: it receives chat requests from the frontend, forwards them to Langflow with the appropriate API key and session context, then parses and returns the AI response. All interactions are optionally logged to PostgreSQL for analytics and auditing.
 
