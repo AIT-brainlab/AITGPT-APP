@@ -1,0 +1,15 @@
+services:
+  ldap_auth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aitgpt_ldap_auth
+    env_file:
+      - .env
+    networks:
+      - aitgpt_network
+    restart: unless-stopped
+
+networks:
+  aitgpt_network:
+    external: true
