@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:15
+    container_name: aitgpt_backend_db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    networks:
+      - aitgpt_network
+    restart: unless-stopped
+
+networks:
+  aitgpt_network:
+    external: true
+
+volumes:
+  postgres_data:
+    driver: local
