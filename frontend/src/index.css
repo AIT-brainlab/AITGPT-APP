@@ -319,3 +319,68 @@ html {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Policy evaluation banner */
+@keyframes policyBannerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 120px;
+  }
+}
+
+@keyframes policyBannerDismiss {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 120px;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+    max-height: 0;
+  }
+}
+
+.policy-banner-enter {
+  animation: policyBannerEnter 0.35s ease-out forwards;
+  overflow: hidden;
+}
+
+.policy-banner-dismiss {
+  animation: policyBannerDismiss 0.45s ease-in forwards;
+  overflow: hidden;
+}
+
+@keyframes policyShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.policy-shimmer {
+  background: linear-gradient(90deg, #e8ece9 25%, #f4f7f5 50%, #e8ece9 75%);
+  background-size: 200% 100%;
+  animation: policyShimmer 1.2s ease-in-out infinite;
+}
+
+.policy-shimmer-text {
+  background: linear-gradient(90deg, #c8d2e0 25%, #e8ece9 50%, #c8d2e0 75%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: policyShimmer 1.2s ease-in-out infinite;
+}
+
+.policy-skeleton-row .policy-shimmer {
+  min-height: 1rem;
+}

@@ -7,6 +7,9 @@ import { getWelcomeMessage, sendChatMessage } from '../utils/chatService';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addMessage, updateMessage, initializeChat, clearMessages } from '../store/slices/chatSlice';
 import { FormattedMessageContent } from './FormattedMessageContent';
+import { PolicyCheckBanner } from './policy/PolicyCheckBanner';
+import { PolicyMenuButton } from './policy/PolicyMenuButton';
+import { PolicyToast, ToastMessage } from './policy/PolicyToast';
 
 type TabId = 'chat' | 'programs' | 'fees';
 
@@ -54,7 +57,16 @@ export function FloatingChatWidget({
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const showToast = (text: string, variant: 'success' | 'error' = 'success') => {
+    setToasts((prev) => [...prev, { id: `t-${Date.now()}`, text, variant }]);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const messages: ChatMessage[] = tabMessages[activeTab] ?? [];
 
@@ -283,29 +295,35 @@ export function FloatingChatWidget({
         </button>
       </div>
 
+      {user.role !== 'guest' && <PolicyCheckBanner user={user} />}
+
       {/* Tab Navigation — Figma node 197:3462 (floating pill) */}
       <div className="px-3 pt-3 pb-1 shrink-0">
         <div
-          className="bg-white flex items-center justify-center gap-1 px-1.5 py-1 overflow-x-auto scrollbar-none"
+          className="bg-white flex items-center gap-1 px-1.5 py-1 relative"
           style={{
             borderRadius: '15px',
             boxShadow: '0 4px 6.5px rgba(159,159,159,0.25)',
+            overflow: 'visible',
           }}
         >
-          {(Object.keys(TAB_LABELS) as TabId[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className="px-3 py-1 rounded-full text-sm whitespace-nowrap transition-all duration-150 font-medium shrink-0"
-              style={
-                activeTab === tab
-                  ? { backgroundColor: '#66bb6a', color: '#ffffff' }
-                  : { color: '#4a5568' }
-              }
-            >
-              {TAB_LABELS[tab]}
-            </button>
-          ))}
+          <div className="flex items-center justify-center gap-1 overflow-x-auto scrollbar-none min-w-0 flex-1">
+            {(Object.keys(TAB_LABELS) as TabId[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className="px-3 py-1 rounded-full text-sm whitespace-nowrap transition-all duration-150 font-medium shrink-0"
+                style={
+                  activeTab === tab
+                    ? { backgroundColor: '#66bb6a', color: '#ffffff' }
+                    : { color: '#4a5568' }
+                }
+              >
+                {TAB_LABELS[tab]}
+              </button>
+            ))}
+          </div>
+          <PolicyMenuButton user={user} isWide={isWide} onToast={showToast} />
         </div>
       </div>
 
@@ -444,6 +462,8 @@ export function FloatingChatWidget({
           </button>
         </div>
       </div>
+
+      <PolicyToast toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

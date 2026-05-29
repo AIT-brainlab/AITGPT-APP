@@ -1,0 +1,212 @@
+import { useState, useEffect } from 'react';
+import { AITWebsite } from '../components/AITWebsite';
+import { FloatingChatButton } from '../components/FloatingChatButton';
+import { FloatingAuthModal } from '../components/FloatingAuthModal';
+import { FloatingUserTypeSelection } from '../components/FloatingUserTypeSelection';
+import { FloatingLoadingScreen } from '../components/FloatingLoadingScreen';
+import { FloatingChatWidget } from '../components/FloatingChatWidget';
+import { FloatingOwlSplash } from '../components/FloatingOwlSplash';
+import { User, UserRole } from '../types/auth';
+import { authenticateUser } from '../utils/authService';
+import { saveUserSession, loadUserSession, clearUserSession } from '../utils/sessionStorage';
+import { clearPolicyEvalSession } from '../utils/policyPermissions';
+
+type WidgetState = 'closed' | 'owl-splash' | 'user-type-selection' | 'auth-modal' | 'authenticating' | 'chat';
+
+const PANEL_WIDTH_DEFAULT = 420;
+const PANEL_WIDTH_EXPANDED = 560;
+const PANEL_HEIGHT_DEFAULT = 600;
+const PANEL_HEIGHT_EXPANDED = 760;
+
+export default function HomePage() {
+  const [widgetState, setWidgetState] = useState<WidgetState>('closed');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [selectedUserType, setSelectedUserType] = useState<UserRole | null>(null);
+  const [isWide, setIsWide] = useState(false);
+  const [isTall, setIsTall] = useState(false);
+
+  const panelWidth = isWide ? PANEL_WIDTH_EXPANDED : PANEL_WIDTH_DEFAULT;
+  const panelHeight = isTall ? PANEL_HEIGHT_EXPANDED : PANEL_HEIGHT_DEFAULT;
+  const onToggleWide = () => setIsWide((v) => !v);
+  const onToggleTall = () => setIsTall((v) => !v);
+
+  useEffect(() => {
+    const savedUser = loadUserSession();
+    if (savedUser) {
+      setCurrentUser(savedUser);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'SSO_AUTH_SUCCESS') {
+        const user = event.data.user as User;
+        setCurrentUser(user);
+        saveUserSession(user);
+        setWidgetState('chat');
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleToggleChat = () => {
+    if (widgetState === 'closed') {
+      setWidgetState('owl-splash');
+    } else {
+      setWidgetState('closed');
+    }
+  };
+
+  const handleOwlSplashComplete = async () => {
+    const savedUser = loadUserSession();
+    if (savedUser) {
+      setCurrentUser(savedUser);
+      setWidgetState('chat');
+    } else {
+      const guestUser = await authenticateUser('guest');
+      setCurrentUser(guestUser);
+      saveUserSession(guestUser);
+      setWidgetState('chat');
+    }
+  };
+
+  const handleSignInFromChat = () => {
+    clearUserSession();
+    setCurrentUser(null);
+    setWidgetState('user-type-selection');
+  };
+
+  const handleUserTypeSelected = (userType: UserRole) => {
+    setSelectedUserType(userType);
+    setWidgetState('auth-modal');
+  };
+
+  const handleContinueAsGuest = async () => {
+    const guestUser = await authenticateUser('guest');
+    setCurrentUser(guestUser);
+    saveUserSession(guestUser);
+    setWidgetState('chat');
+  };
+
+  const handleAuthenticate = (user: User) => {
+    setCurrentUser(user);
+    saveUserSession(user);
+    setWidgetState('chat');
+  };
+
+  const handleCloseWidget = () => {
+    setWidgetState('closed');
+  };
+
+  const handleBackToUserTypeSelection = () => {
+    setWidgetState('user-type-selection');
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const { logout } = await import('../utils/authApi');
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    try {
+      const { clearSessionId } = await import('../utils/chatApi');
+      clearSessionId();
+    } catch (error) {
+      console.error('Error clearing session:', error);
+    }
+    try {
+      const { clearAllMessages, setCurrentUser } = await import('../store/slices/chatSlice');
+      const { store } = await import('../store/store');
+      store.dispatch(clearAllMessages());
+      store.dispatch(setCurrentUser(null));
+    } catch (error) {
+      console.error('Error clearing chat messages:', error);
+    }
+    clearUserSession();
+    clearPolicyEvalSession();
+    setCurrentUser(null);
+    setWidgetState('closed');
+  };
+
+  const isOpen = widgetState !== 'closed';
+
+  return (
+    <div className="relative">
+      <AITWebsite />
+
+      <FloatingChatButton
+        isOpen={isOpen}
+        onClick={handleToggleChat}
+        hasUnreadMessages={false}
+      />
+
+      {widgetState === 'owl-splash' && (
+        <FloatingOwlSplash
+          onComplete={handleOwlSplashComplete}
+          width={panelWidth}
+          height={panelHeight}
+        />
+      )}
+
+      {widgetState === 'user-type-selection' && (
+        <FloatingUserTypeSelection
+          onSelectType={handleUserTypeSelected}
+          onClose={handleCloseWidget}
+          width={panelWidth}
+          height={panelHeight}
+          isWide={isWide}
+          isTall={isTall}
+          onToggleWide={onToggleWide}
+          onToggleTall={onToggleTall}
+        />
+      )}
+
+      {widgetState === 'auth-modal' && selectedUserType && (
+        <FloatingAuthModal
+          userType={selectedUserType}
+          onAuthenticate={handleAuthenticate}
+          onClose={handleBackToUserTypeSelection}
+          onContinueAsGuest={handleContinueAsGuest}
+          width={panelWidth}
+          height={panelHeight}
+          isWide={isWide}
+          isTall={isTall}
+          onToggleWide={onToggleWide}
+          onToggleTall={onToggleTall}
+        />
+      )}
+
+      {widgetState === 'authenticating' && (
+        <FloatingLoadingScreen
+          message="Authenticating..."
+          width={panelWidth}
+          height={panelHeight}
+        />
+      )}
+
+      {widgetState === 'chat' && currentUser && (
+        <FloatingChatWidget
+          user={currentUser}
+          onSignOut={handleSignOut}
+          onClose={handleCloseWidget}
+          onSignIn={currentUser.role === 'guest' ? handleSignInFromChat : undefined}
+          width={panelWidth}
+          height={panelHeight}
+          isWide={isWide}
+          isTall={isTall}
+          onToggleWide={onToggleWide}
+          onToggleTall={onToggleTall}
+        />
+      )}
+
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/25 z-30 transition-all duration-300"
+          onClick={() => widgetState !== 'chat' && handleCloseWidget()}
+        />
+      )}
+    </div>
+  );
+}
