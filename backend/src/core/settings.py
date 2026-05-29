@@ -107,6 +107,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Using Django's built-in User model (no custom AUTH_USER_MODEL)
 
+# LDAP-first auth chain. LDAPBackend short-circuits with PermissionDenied for
+# any user it recognises; ModelBackend handles purely-local users (and is the
+# fallback when LDAP is disabled, unreachable, or doesn't know the username).
+AUTHENTICATION_BACKENDS = [
+    'core.auth_backends.LDAPBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
@@ -146,6 +154,16 @@ LANGFLOW_API_URL = os.getenv('LANGFLOW_API_URL')
 LANGFLOW_API_KEY = os.getenv('LANGFLOW_API_KEY')
 LANGFLOW_RUN_ID = os.getenv('LANGFLOW_RUN_ID')
 
+# Per-tab Langflow endpoints. Each is a fully-qualified URL ending in
+# `/run/<run_id>?stream=false`. The chat widget sends a `tab` parameter
+# and the backend dispatches to the matching URL. Falls back to
+# LANGFLOW_API_URL + LANGFLOW_RUN_ID if a tab URL is not configured.
+LANGFLOW_TAB_URLS = {
+    'chat': os.getenv('LANGFLOW_CHAT_URL'),
+    'programs': os.getenv('LANGFLOW_PROGRAMS_URL'),
+    'fees': os.getenv('LANGFLOW_FEES_URL'),
+}
+
 LANGFLOW_REASONING_API_URL = os.getenv('LANGFLOW_REASONING_API_URL')
 LANGFLOW_REASONING_API_KEY = os.getenv('LANGFLOW_REASONING_API_KEY')
 LANGFLOW_REASONING_RUN_ID = os.getenv('LANGFLOW_REASONING_RUN_ID')
@@ -153,3 +171,10 @@ LANGFLOW_REASONING_RUN_ID = os.getenv('LANGFLOW_REASONING_RUN_ID')
 CHAT_RETRIEVAL_ACCESS_TOKEN = os.getenv('CHAT_RETRIEVAL_ACCESS_TOKEN')
 
 IS_LOGGING_ENABLED = os.getenv('IS_LOGGING_ENABLED', 'False').strip().lower() in ('true', '1', 'yes')
+
+LDAP_ENABLED = os.getenv('LDAP_ENABLED', 'False').strip().lower() in ('true', '1', 'yes')
+LDAP_AUTH_API_URL = os.getenv('LDAP_AUTH_API_URL', '')
+LDAP_AUTH_API_KEY = os.getenv('LDAP_AUTH_API_KEY', '')
+LDAP_LOCAL_ONLY_USERS = [
+    u.strip() for u in os.getenv('LDAP_LOCAL_ONLY_USERS', 'admin').split(',') if u.strip()
+]

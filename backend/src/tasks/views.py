@@ -1,7 +1,6 @@
 import hashlib
 import time
 import uuid
-from typing import Dict, Any, Optional
 
 from asgiref.sync import sync_to_async
 from django.conf import settings
@@ -9,11 +8,11 @@ from django.db import connection, models, transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from core.exceptions import NotFoundError, DatabaseError, ValidationError
+from core.exceptions import NotFoundError, DatabaseError
 from core.utils import create_response, log_error
 
 from .models import ChatLog, TaskLog
