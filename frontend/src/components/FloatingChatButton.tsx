@@ -11,11 +11,12 @@ export function FloatingChatButton({ isOpen, onClick, hasUnreadMessages }: Float
   return (
     <button
       onClick={onClick}
-      className={`fixed bottom-6 right-6 z-50 shadow-2xl transition-all duration-300 ${
+      className={`fixed bottom-6 right-6 shadow-2xl transition-all duration-300 ${
         isOpen
           ? 'bg-[#4a7a3d] hover:bg-[#3C6031] w-14 h-14'
           : 'w-16 h-16'
       } rounded-full flex items-center justify-center text-white group`}
+      style={{ zIndex: 60 }}
       aria-label={isOpen ? 'Close chat' : 'Open chat'}
     >
       {isOpen ? (
@@ -23,7 +24,7 @@ export function FloatingChatButton({ isOpen, onClick, hasUnreadMessages }: Float
       ) : (
         <>
           <div className="group-hover:scale-110 transition-transform">
-            <OwlMascot size={64} />
+            <OwlMascot size={72} />
           </div>
           {hasUnreadMessages && (
             <span className="absolute top-0 right-0 w-4 h-4 bg-[#a1be37] rounded-full border-2 border-white animate-pulse"></span>

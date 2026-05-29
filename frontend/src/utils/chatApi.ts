@@ -4,6 +4,8 @@
 import { post, ApiResponse } from './api';
 import { User } from '../types/auth';
 
+export type ChatTab = 'chat' | 'programs' | 'fees';
+
 export interface ChatRequest {
   input_value: string;
   output_type?: string;
@@ -14,6 +16,7 @@ export interface ChatRequest {
   run_id?: string;
   session_id?: string; // For guest users
   reasoning_mode?: boolean; // Enable reasoning mode
+  tab?: ChatTab; // Which chat-window tab the request originated from
 }
 
 export interface ChatResponse {
@@ -46,7 +49,8 @@ export const clearSessionId = (): void => {
 export const sendChatMessage = async (
   message: string,
   user: User | null = null,
-  reasoningMode: boolean = false
+  reasoningMode: boolean = false,
+  tab: ChatTab = 'chat'
 ): Promise<ApiResponse<ChatResponse>> => {
   const requestData: ChatRequest = {
     input_value: message,
@@ -55,6 +59,7 @@ export const sendChatMessage = async (
     include_generation_raw: 'True',
     include_retrieval_chunks: 'True',
     reasoning_mode: reasoningMode,
+    tab,
   };
 
   // For guest users, include session_id

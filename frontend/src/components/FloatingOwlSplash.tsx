@@ -3,9 +3,11 @@ import OwlMascot from './OwlMascot';
 
 interface FloatingOwlSplashProps {
   onComplete: () => void;
+  width: number;
+  height: number;
 }
 
-export function FloatingOwlSplash({ onComplete }: FloatingOwlSplashProps) {
+export function FloatingOwlSplash({ onComplete, width, height }: FloatingOwlSplashProps) {
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
@@ -19,18 +21,22 @@ export function FloatingOwlSplash({ onComplete }: FloatingOwlSplashProps) {
 
   return (
     <div
-      className="fixed right-6 bottom-24 z-50 w-[420px] h-[600px] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+      className="fixed right-6 bottom-24 z-50 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       style={{
+        width: `${width}px`,
+        height: `${height}px`,
+        maxWidth: 'calc(100vw - 48px)',
+        maxHeight: 'calc(100vh - 120px)',
         background: 'linear-gradient(135deg, #4a7a3d 0%, #3C6031 100%)',
         opacity: fading ? 0 : 1,
-        transition: 'opacity 0.5s ease-out',
+        transition: 'opacity 0.5s ease-out, width 0.25s ease, height 0.25s ease',
         animation: 'slideUp 0.3s ease-out',
       }}
     >
       {/* Header bar */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/20">
         <div className="w-2 h-2 rounded-full bg-green-500" />
-        <span className="text-white font-semibold text-sm">AIT AI Assistant</span>
+        <span className="text-white font-semibold text-sm">AITGPT</span>
       </div>
 
       {/* Owl display area */}

@@ -4,11 +4,12 @@ interface OwlMascotProps {
   size?: number;
   withSparkle?: boolean;
   coverEyes?: boolean;
+  hideBackground?: boolean;
 }
 
 type OwlState = 'normal' | 'dizzy' | 'annoyed' | 'flyaway' | 'returning' | 'bored' | 'sleepy' | 'waking';
 
-export default function OwlMascot({ size = 120, withSparkle = false, coverEyes = false }: OwlMascotProps) {
+export default function OwlMascot({ size = 120, withSparkle = false, coverEyes = false, hideBackground = false }: OwlMascotProps) {
   const [hovered, setHovered] = useState(false);
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
   const [owlState, setOwlState] = useState<OwlState>('normal');
@@ -264,7 +265,7 @@ style={{
       onClick={handleClick}
     >
       <svg
-        viewBox="0 0 160 160"
+        viewBox="10 5 150 150"
         width={size * 1.3}
         height={size * 1.3}
         xmlns="http://www.w3.org/2000/svg"
@@ -275,63 +276,27 @@ style={{
         }}
       >
         <defs>
-          <radialGradient id="bgGrad" cx="50%" cy="45%" r="50%">
-            <stop offset="0%" stopColor="#f5f0d0" />
-            <stop offset="70%" stopColor="#e8e0b8" />
-            <stop offset="100%" stopColor="#c8c0a0" />
-          </radialGradient>
-          <filter id="bgShadow" x="-20%" y="-10%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000" floodOpacity="0.15" />
-          </filter>
+          <linearGradient id={`bgGold_${size}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#f5eec5" />
+            <stop offset="50%" stopColor="#ebdfa4" />
+            <stop offset="100%" stopColor="#d6c184" />
+          </linearGradient>
         </defs>
 
-        {/* Background circle — cracks on annoyed, shatters on flyaway */}
-        <circle
-          cx="85" cy="88" r="62"
-          fill="url(#bgGrad)"
-          filter="url(#bgShadow)"
-          style={{
-            transition: 'opacity 0.3s',
-            opacity: flyaway ? 0 : 1,
-          }}
-        />
-
-        {/* Crack lines on the circle when annoyed */}
-        {annoyed && (
-          <g style={{ opacity: 0.6 }}>
-            <path d="M65,30 L75,55 L68,70" stroke="#8B7355" strokeWidth="1.5" fill="none" />
-            <path d="M110,35 L100,58 L108,68" stroke="#8B7355" strokeWidth="1.2" fill="none" />
-            <path d="M50,80 L62,82 L58,95" stroke="#8B7355" strokeWidth="1" fill="none" />
-          </g>
+        {/* Cream/butter background circle */}
+        {!hideBackground && (
+          <circle
+            cx="85"
+            cy="88"
+            r="62"
+            fill={`url(#bgGold_${size})`}
+            style={{ opacity: gone ? 0 : 1, transition: 'opacity 0.3s' }}
+          />
         )}
 
-        {/* Shatter particles when flying away */}
-        {flyaway && (
-          <g style={{ animation: 'shatterFade 0.8s ease-out forwards' }}>
-            {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
-              const rad = (angle * Math.PI) / 180;
-              const startX = 85 + Math.cos(rad) * 30;
-              const startY = 88 + Math.sin(rad) * 30;
-              return (
-                <circle
-                  key={i}
-                  cx={startX}
-                  cy={startY}
-                  r={3 + (i % 3)}
-                  fill={i % 2 === 0 ? '#e8e0b8' : '#c8c0a0'}
-                  style={{
-                    animation: `shatterPiece${i % 4} 0.6s ease-out forwards`,
-                    transformOrigin: `${startX}px ${startY}px`,
-                  }}
-                />
-              );
-            })}
-          </g>
-        )}
-
-        {/* === Sparkle star (top-left) === */}
+        {/* === Sparkle star (shuriken-style, curved concave sides) === */}
         <path
-          d="M32,28 L38,48 L32,68 L26,48 Z"
+          d="M32,26 Q34,46 54,48 Q34,50 32,70 Q30,50 10,48 Q30,46 32,26 Z"
           fill="#f59e0b"
           style={{
             animation: hovered && !dizzy && !gone && !idle ? 'sparkleRotate 0.4s ease-in-out' : undefined,
@@ -340,21 +305,12 @@ style={{
             transition: 'opacity 0.5s',
           }}
         />
+        {/* Small green sparkle (matching curved style) */}
         <path
-          d="M12,48 L32,42 L52,48 L32,54 Z"
-          fill="#f59e0b"
-          style={{
-            animation: hovered && !dizzy && !gone && !idle ? 'sparkleRotate 0.4s ease-in-out' : undefined,
-            transformOrigin: '32px 48px',
-            opacity: gone ? 0 : idle ? 0.3 : 1,
-            transition: 'opacity 0.5s',
-          }}
+          d="M50,62 Q50.5,67.5 56,68 Q50.5,68.5 50,74 Q49.5,68.5 44,68 Q49.5,67.5 50,62 Z"
+          fill="#2e7d32"
+          style={{ opacity: gone ? 0 : idle ? 0.3 : 1, transition: 'opacity 0.5s' }}
         />
-        {/* Small green sparkle */}
-        <g style={{ opacity: gone ? 0 : idle ? 0.3 : 1, transition: 'opacity 0.5s' }}>
-          <path d="M50,62 L52,68 L50,74 L48,68 Z" fill="#2e7d32" />
-          <path d="M44,68 L50,66 L56,68 L50,70 Z" fill="#2e7d32" />
-        </g>
 
         {/* === Dizzy stars circling above head — direction matches cursor spin === */}
         {dizzy && (

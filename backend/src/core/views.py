@@ -44,20 +44,34 @@ def is_reasoning_mode_enabled() -> bool:
     )
 
 
-def get_langflow_config(use_reasoning: bool = False):
-    # Use reasoning endpoint if requested AND reasoning mode is configured
+def _extract_run_id_from_url(url: str) -> str:
+    # URLs look like .../run/<run_id>?stream=false
+    try:
+        return url.split('/run/', 1)[1].split('?', 1)[0]
+    except (IndexError, AttributeError):
+        return ''
+
+
+def resolve_langflow_url(tab: str | None, use_reasoning: bool, override_run_id: str | None):
+    """Resolve the Langflow URL, API key, and run_id used for logging.
+
+    Selection order:
+      1. Reasoning mode (if requested and configured) -> reasoning endpoint.
+      2. tab -> tab-specific URL from settings.LANGFLOW_TAB_URLS.
+      3. Fallback -> base LANGFLOW_API_URL + run_id.
+    """
     if use_reasoning and is_reasoning_mode_enabled():
-        return (
-            settings.LANGFLOW_REASONING_API_URL,
-            settings.LANGFLOW_REASONING_API_KEY,
-            settings.LANGFLOW_REASONING_RUN_ID
-        )
-    else:
-        return (
-            settings.LANGFLOW_API_URL,
-            settings.LANGFLOW_API_KEY,
-            settings.LANGFLOW_RUN_ID
-        )
+        run_id = override_run_id or settings.LANGFLOW_REASONING_RUN_ID
+        url = f"{settings.LANGFLOW_REASONING_API_URL}/run/{run_id}?stream=false"
+        return url, settings.LANGFLOW_REASONING_API_KEY, run_id
+
+    tab_url = settings.LANGFLOW_TAB_URLS.get(tab) if tab else None
+    if tab_url:
+        return tab_url, settings.LANGFLOW_API_KEY, _extract_run_id_from_url(tab_url)
+
+    run_id = override_run_id or settings.LANGFLOW_RUN_ID
+    url = f"{settings.LANGFLOW_API_URL}/run/{run_id}?stream=false"
+    return url, settings.LANGFLOW_API_KEY, run_id
 
 
 @api_view(['POST'])
@@ -119,16 +133,9 @@ def login(request: Request) -> Response:
 @permission_classes([IsAuthenticated])
 def logout(request: Request) -> Response:
     try:
-        user_id = str(request.user.id)
         if hasattr(request.user, 'auth_token'):
-            # Get session_id before deleting token for logging
-            token = request.user.auth_token
-            token_hash = hashlib.sha256(token.key.encode()).hexdigest()[:16]
-            session_id = f"user-{user_id}-{token_hash}"
-            token.delete()
-        else:
-            pass
-        
+            request.user.auth_token.delete()
+
         return create_response(
             message='Logout successful',
             status_code=status.HTTP_200_OK
@@ -195,14 +202,15 @@ def langflow_chat(request: Request) -> Response:
         include_generation_raw = validated_data.get('include_generation_raw', 'True')
         include_retrieval_chunks = validated_data.get('include_retrieval_chunks', 'True')
         reasoning_mode = validated_data.get('reasoning_mode', False)
-        
-        # Get appropriate Langflow configuration (reasoning or regular)
-        langflow_api_url, langflow_api_key, default_run_id = get_langflow_config(use_reasoning=reasoning_mode)
-        run_id = validated_data.get('run_id', default_run_id)
-        
-        # Build Langflow API URL
-        langflow_url = f"{langflow_api_url}/run/{run_id}?stream=false"
-        
+        tab = validated_data.get('tab')
+
+        # Resolve Langflow endpoint based on (reasoning_mode, tab) and an optional run_id override
+        langflow_url, langflow_api_key, run_id = resolve_langflow_url(
+            tab=tab,
+            use_reasoning=reasoning_mode,
+            override_run_id=validated_data.get('run_id'),
+        )
+
         # Prepare request payload
         payload = {
             "input_value": input_value,
@@ -425,14 +433,15 @@ def langflow_chat_test(request: Request) -> Response:
         include_generation_raw = validated_data.get('include_generation_raw', 'True')
         include_retrieval_chunks = validated_data.get('include_retrieval_chunks', 'True')
         reasoning_mode = validated_data.get('reasoning_mode', False)
-        
-        # Get appropriate Langflow configuration (reasoning or regular)
-        langflow_api_url, langflow_api_key, default_run_id = get_langflow_config(use_reasoning=reasoning_mode)
-        run_id = validated_data.get('run_id', default_run_id)
-        
-        # Build Langflow API URL
-        langflow_url = f"{langflow_api_url}/run/{run_id}?stream=false"
-        
+        tab = validated_data.get('tab')
+
+        # Resolve Langflow endpoint based on (reasoning_mode, tab) and an optional run_id override
+        langflow_url, langflow_api_key, run_id = resolve_langflow_url(
+            tab=tab,
+            use_reasoning=reasoning_mode,
+            override_run_id=validated_data.get('run_id'),
+        )
+
         # Prepare request payload
         payload = {
             "input_value": input_value,

@@ -1,4 +1,5 @@
 import { User, UserRole } from '../types/auth';
+import type { ChatTab } from './chatApi';
 
 export const getWelcomeMessage = (user: User): string => {
   const messages: Record<UserRole, string> = {
@@ -69,12 +70,13 @@ export const getContextualSuggestions = (role: UserRole): string[] => {
 export const sendChatMessage = async (
   userMessage: string,
   user: User,
-  reasoningMode: boolean = false
+  reasoningMode: boolean = false,
+  tab: ChatTab = 'chat'
 ): Promise<string> => {
   try {
     const { sendChatMessage: apiSendChatMessage } = await import('./chatApi');
-    
-    const response = await apiSendChatMessage(userMessage, user, reasoningMode);
+
+    const response = await apiSendChatMessage(userMessage, user, reasoningMode, tab);
     
     if (response.success && response.data?.assistant_text) {
       return response.data.assistant_text;

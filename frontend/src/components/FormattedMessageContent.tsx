@@ -1,12 +1,4 @@
 import React from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './ui/table';
 
 type ContentBlock = { type: 'markdown'; text: string } | { type: 'table'; rows: string[][] };
 
@@ -215,28 +207,28 @@ function renderTable(rows: string[][], keyPrefix: string): React.ReactNode {
   const headerRow = rows[0];
   const bodyRows = rows.slice(1);
   return (
-    <Table key={keyPrefix} className="my-3 border border-gray-200 rounded-lg overflow-hidden">
-      <TableHeader>
-        <TableRow className="bg-gray-50 border-b border-gray-200">
+    <table key={keyPrefix} className="my-3 w-full border border-gray-200 rounded-lg overflow-hidden text-sm">
+      <thead>
+        <tr className="bg-gray-50 border-b border-gray-200">
           {headerRow.map((cell, cidx) => (
-            <TableHead key={cidx} className="font-semibold text-gray-700 whitespace-normal">
+            <th key={cidx} className="px-2 py-2 text-left font-semibold text-gray-700 whitespace-normal align-middle">
               {cell}
-            </TableHead>
+            </th>
           ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+        </tr>
+      </thead>
+      <tbody>
         {bodyRows.map((row, ridx) => (
-          <TableRow key={ridx} className="border-b border-gray-100 last:border-0">
+          <tr key={ridx} className="border-b border-gray-100 last:border-0">
             {row.map((cell, cidx) => (
-              <TableCell key={cidx} className="text-gray-800 whitespace-normal">
+              <td key={cidx} className="px-2 py-2 text-gray-800 whitespace-normal align-middle">
                 {cell}
-              </TableCell>
+              </td>
             ))}
-          </TableRow>
+          </tr>
         ))}
-      </TableBody>
-    </Table>
+      </tbody>
+    </table>
   );
 }
 

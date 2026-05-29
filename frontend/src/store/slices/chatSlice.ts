@@ -66,6 +66,14 @@ const chatSlice = createSlice({
             timestamp: new Date(),
           },
         ];
+      } else {
+        // Refresh persisted welcome message timestamp to current local time
+        const welcomeIdx = state.tabMessages[tab].findIndex(
+          (m) => m.id === `${tab}-welcome`
+        );
+        if (welcomeIdx !== -1) {
+          state.tabMessages[tab][welcomeIdx].timestamp = new Date();
+        }
       }
     },
     setCurrentUser: (state, action: PayloadAction<string | null>) => {

@@ -9,13 +9,13 @@ const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
     return window.__API_BASE_URL__;
   }
-  
+
   // Priority 2: Fallback to Vite environment variable (build-time)
   // This is used during development or if runtime injection fails
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  
+
   // Priority 3: Default fallback
   return 'http://localhost:8000';
 };
@@ -51,6 +51,21 @@ export const removeAuthToken = (): void => {
 };
 
 /**
+ * Safely parse JSON response, handle non-JSON content gracefully
+ */
+const safeParseJson = async (response: Response): Promise<any> => {
+  const contentType = response.headers.get('content-type');
+  if (contentType?.includes('application/json')) {
+    return await response.json();
+  }
+  // For non-JSON responses (HTML error pages, etc.)
+  const text = await response.text();
+  return {
+    message: text ? text.substring(0, 200) : 'An error occurred',
+  };
+};
+
+/**
  * Make an API request with authentication
  */
 export const apiRequest = async <T = any>(
@@ -68,14 +83,21 @@ export const apiRequest = async <T = any>(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = endpoint.startsWith('http://') || endpoint.startsWith('https://')
+      ? endpoint
+      : `${API_BASE_URL}${endpoint}`;
+
+    const response = await fetch(url, {
       ...options,
       headers,
     });
 
-    const data = await response.json();
+    const data = await safeParseJson(response);
 
     if (!response.ok) {
+      if (response.status === 401) {
+        removeAuthToken();
+      }
       return {
         success: false,
         errors: data.errors || { message: data.message || 'An error occurred' },
@@ -109,12 +131,16 @@ export const apiRequestWithoutAuth = async <T = any>(
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = endpoint.startsWith('http://') || endpoint.startsWith('https://')
+      ? endpoint
+      : `${API_BASE_URL}${endpoint}`;
+
+    const response = await fetch(url, {
       ...options,
       headers,
     });
 
-    const data = await response.json();
+    const data = await safeParseJson(response);
 
     if (!response.ok) {
       return {
@@ -170,4 +196,84 @@ export const get = <T = any>(endpoint: string): Promise<ApiResponse<T>> => {
   return apiRequest<T>(endpoint, {
     method: 'GET',
   });
+};
+
+/**
+ * DELETE request helper
+ */
+export const del = <T = any>(endpoint: string): Promise<ApiResponse<T>> => {
+  return apiRequest<T>(endpoint, {
+    method: 'DELETE',
+  });
+};
+
+/**
+ * PATCH request helper
+ */
+export const patch = <T = any>(
+  endpoint: string,
+  body: Record<string, unknown>
+): Promise<ApiResponse<T>> => {
+  return apiRequest<T>(endpoint, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+};
+
+/**
+ * Multipart request (PDF upload). Omits Content-Type so the browser sets the boundary.
+ */
+export const apiRequestFormData = async <T = unknown>(
+  endpoint: string,
+  formData: FormData,
+  method: 'POST' | 'PUT' | 'PATCH' = 'POST'
+): Promise<ApiResponse<T>> => {
+  const token = getAuthToken();
+  const headers: HeadersInit = {};
+
+  if (token) {
+    headers['Authorization'] = `Token ${token}`;
+  }
+
+  try {
+    const url = endpoint.startsWith('http://') || endpoint.startsWith('https://')
+      ? endpoint
+      : `${API_BASE_URL}${endpoint}`;
+
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: formData,
+    });
+
+    let data: Record<string, unknown> = {};
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      data = await response.json();
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        removeAuthToken();
+      }
+      return {
+        success: false,
+        errors: (data.errors as Record<string, string[] | string>) || {
+          message: (data.message as string) || 'An error occurred',
+        },
+      };
+    }
+
+    return {
+      success: true,
+      ...(data as object),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      errors: {
+        message: error instanceof Error ? error.message : 'Network error occurred',
+      },
+    };
+  }
 };

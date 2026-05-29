@@ -98,3 +98,8 @@ class LangflowRequestSerializer(serializers.Serializer):
     include_retrieval_chunks = serializers.CharField(required=False, default="True", help_text="Include retrieval chunks")
     run_id = serializers.CharField(required=False, help_text="Langflow run ID (optional, uses default from settings if not provided)")
     reasoning_mode = serializers.BooleanField(required=False, default=False, help_text="Enable reasoning mode (uses reasoning endpoint if available)")
+    tab = serializers.ChoiceField(
+        required=False,
+        choices=['chat', 'programs', 'fees'],
+        help_text="Which chat-window tab the request originated from. Selects the matching Langflow URL."
+    )
