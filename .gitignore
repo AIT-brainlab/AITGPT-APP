@@ -83,4 +83,3 @@ htmlcov/
 **/data/*
 !backend/.devcontainer/dev/.env
 !backend/.devcontainer/postgres/.env
-!backend/dist/docker-bake.hcl

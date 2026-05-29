@@ -1,3 +1,9 @@
-include:
-  - docker-compose.db.yml
-  - docker-compose.web.yml
+services:
+  backend:
+    image: ${PROJECT_NAME}:latest
+    container_name: ${PROJECT_NAME}
+    platform: linux/amd64
+    env_file:
+      - .env
+    ports:
+      - 8000:8000

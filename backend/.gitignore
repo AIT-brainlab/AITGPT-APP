@@ -59,3 +59,5 @@ htmlcov/
 .mypy_cache/
 .pytype/
 !dist/docker-bake.hcl
+!dist/dockerfile
+!dist/.env
