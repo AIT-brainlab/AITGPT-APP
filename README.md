@@ -1,6 +1,6 @@
 # AITGPT — University AI Chatbot
 
-A full-stack AI-powered chatbot application for the Asian Institute of Technology (AIT). The system provides role-based conversational assistance for seven user types: guest, candidate (prospective student), student, faculty, staff, alumni, and management. The frontend is a React/TypeScript application served as an overlay widget on a university landing page. The backend is a Django REST API that authenticates users, proxies chat requests to an external Langflow AI service, and logs all interactions to a PostgreSQL database.
+A full-stack AI-powered chatbot application for the Asian Institute of Technology (AIT). The system provides role-based conversational assistance for seven user types: guest, candidate (prospective student), student, faculty, staff, alumni, and management. The frontend is a React/TypeScript application served as an overlay widget on a university landing page. The backend is a Django REST API that authenticates users, proxies chat requests to an external Langflow AI service, and logs all interactions to a PostgreSQL database..
 
 ----
 
