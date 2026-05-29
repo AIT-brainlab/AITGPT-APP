@@ -6,7 +6,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+dist/*
 downloads/
 eggs/
 .eggs/
@@ -58,3 +58,4 @@ htmlcov/
 # Type checking
 .mypy_cache/
 .pytype/
+!dist/docker-bake.hcl
