@@ -81,5 +81,6 @@ htmlcov/
 .claude/
 
 **/data/*
-!backend/.devcontainer/dev/.env
-!backend/.devcontainer/postgres/.env
+!backend/dist/docker-bake.hcl
+!.devcontainer/frontend/.env
+!.devcontainer/backend/.env
