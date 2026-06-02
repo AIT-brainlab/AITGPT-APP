@@ -1,6 +1,6 @@
 /**
  * Policy API — Compliance Checker endpoints.
- * Uses VITE_POLICY_API_URL for real compliance service (default: http://localhost:8105)
+ * Uses VITE_POLICY_API_URL for real compliance service 
  * or falls back to mock mode via policyService.ts
  */
 import { apiRequestFormData, del, get, patch } from './api';
@@ -12,7 +12,20 @@ import type {
   PolicyUpdatePayload,
 } from '../types/policy';
 
-const POLICY_API_BASE_URL = import.meta.env.VITE_POLICY_API_URL || 'http://localhost:8105';
+const getPolicyApiBaseUrl = (): string => {
+  // Use runtime configuration (injected by startup script) or fallback to environment variable
+  if (typeof window !== 'undefined' && window.__POLICY_API_BASE_URL__) {
+    return window.__POLICY_API_BASE_URL__;
+  }
+  // Fallback to build-time environment variable
+  if (import.meta.env.VITE_POLICY_API_URL) {
+    return import.meta.env.VITE_POLICY_API_URL;
+  }
+  // Default fallback
+  return 'http://localhost:8005';
+};
+
+const POLICY_API_BASE_URL = getPolicyApiBaseUrl();
 
 const buildQuery = (params: PolicyListParams): string => {
   const q = new URLSearchParams();

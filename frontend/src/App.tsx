@@ -19,6 +19,10 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showSSOPage, setShowSSOPage] = useState(false);
   const [selectedUserType, setSelectedUserType] = useState<UserRole | null>(null);
+  const [width, setWidth] = useState(420);
+  const [height, setHeight] = useState(600);
+  const [isWide, setIsWide] = useState(false);
+  const [isTall, setIsTall] = useState(false);
 
   // Load saved session on component mount
   useEffect(() => {
@@ -117,6 +121,16 @@ export default function App() {
     setWidgetState('user-type-selection');
   };
 
+  const handleToggleWide = () => {
+    setIsWide(!isWide);
+    setWidth(isWide ? 420 : 600);
+  };
+
+  const handleToggleTall = () => {
+    setIsTall(!isTall);
+    setHeight(isTall ? 600 : 800);
+  };
+
   const handleSignOut = async () => {
     // Call logout API if needed
     try {
@@ -176,7 +190,7 @@ export default function App() {
 
       {/* Owl splash landing screen */}
       {widgetState === 'owl-splash' && (
-        <FloatingOwlSplash onComplete={handleOwlSplashComplete} />
+        <FloatingOwlSplash onComplete={handleOwlSplashComplete} width={width} height={height} />
       )}
 
       {/* Floating Chat Widgets */}
@@ -192,6 +206,12 @@ export default function App() {
         <FloatingUserTypeSelection
           onSelectType={handleUserTypeSelected}
           onClose={handleBackToWelcome}
+          width={width}
+          height={height}
+          isWide={isWide}
+          isTall={isTall}
+          onToggleWide={handleToggleWide}
+          onToggleTall={handleToggleTall}
         />
       )}
 
@@ -200,11 +220,17 @@ export default function App() {
           userType={selectedUserType}
           onAuthenticate={handleAuthenticate}
           onClose={handleBackToUserTypeSelection}
+          width={width}
+          height={height}
+          isWide={isWide}
+          isTall={isTall}
+          onToggleWide={handleToggleWide}
+          onToggleTall={handleToggleTall}
         />
       )}
 
       {widgetState === 'authenticating' && (
-        <FloatingLoadingScreen message="Authenticating..." />
+        <FloatingLoadingScreen message="Authenticating..." width={width} height={height} />
       )}
 
       {widgetState === 'chat' && currentUser && (
@@ -212,6 +238,13 @@ export default function App() {
           user={currentUser}
           onSignOut={handleSignOut}
           onSignIn={currentUser.role === 'guest' ? handleSignInFromChat : undefined}
+          onClose={handleCloseWidget}
+          width={width}
+          height={height}
+          isWide={isWide}
+          isTall={isTall}
+          onToggleWide={handleToggleWide}
+          onToggleTall={handleToggleTall}
         />
       )}
 

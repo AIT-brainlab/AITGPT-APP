@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { FileText, ChevronDown, Upload, Trash2, Eye } from 'lucide-react';
+import { FileText, ChevronDown, Upload, Trash2, Eye, CheckCircle } from 'lucide-react';
 import type { User } from '../../types/auth';
-import type { PolicyRecord } from '../../types/policy';
+import type { PolicyRecord, ValidateResponse } from '../../types/policy';
 import { canManagePolicies } from '../../utils/policyPermissions';
 import { getCurrentPolicy, deleteCurrentPolicy } from '../../utils/policyService';
 import { CurrentPolicyModal } from './CurrentPolicyModal';
 import { PolicyUploadModal } from './PolicyUploadModal';
 import { PolicyConfirmDialog } from './PolicyConfirmDialog';
+import { CheckPolicyModal } from './CheckPolicyModal';
 
 interface PolicyMenuButtonProps {
   user: User;
@@ -20,6 +21,7 @@ export function PolicyMenuButton({ user, isWide, onToast, onUploadSuccess }: Pol
   const [detailOpen, setDetailOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [checkPolicyOpen, setCheckPolicyOpen] = useState(false);
   const [currentPolicy, setCurrentPolicy] = useState<PolicyRecord | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [removeLoading, setRemoveLoading] = useState(false);
@@ -66,6 +68,13 @@ export function PolicyMenuButton({ user, isWide, onToast, onUploadSuccess }: Pol
     } finally {
       setRemoveLoading(false);
     }
+  };
+
+  const handleValidationComplete = (results: ValidateResponse) => {
+    setCheckPolicyOpen(false);
+    onToast('Validation completed', 'success');
+    // TODO: Display validation results
+    // For now, just close the modal and show success toast
   };
 
   return (
@@ -129,6 +138,19 @@ export function PolicyMenuButton({ user, isWide, onToast, onUploadSuccess }: Pol
                   <Trash2 className="w-4 h-4" />
                   Remove policy
                 </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    setCheckPolicyOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-50"
+                  style={{ color: '#2e7d32' }}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Check Policy
+                </button>
               </>
             )}
           </div>
@@ -161,6 +183,12 @@ export function PolicyMenuButton({ user, isWide, onToast, onUploadSuccess }: Pol
         loading={removeLoading}
         onConfirm={handleRemove}
         onCancel={() => setRemoveOpen(false)}
+      />
+
+      <CheckPolicyModal
+        isOpen={checkPolicyOpen}
+        onClose={() => setCheckPolicyOpen(false)}
+        onValidationComplete={handleValidationComplete}
       />
     </>
   );

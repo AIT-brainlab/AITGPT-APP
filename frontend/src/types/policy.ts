@@ -54,6 +54,47 @@ export interface PolicyUpdatePayload {
   status?: PolicyStatus;
 }
 
+export type PersonRole = 'STUDENT' | 'FACULTY' | 'STAFF' | 'ADMIN';
+
+export type PersonStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'GRADUATED';
+
+export interface Person {
+  id: string;
+  name: string;
+  role: PersonRole;
+  status: PersonStatus;
+  issueCount: number;
+  issues?: string[];
+}
+
+export interface PersonListResponse {
+  persons: Person[];
+}
+
+export interface ValidateRequest {
+  personIds: string[];
+  policyIds?: string[];
+}
+
+export interface ValidationViolation {
+  id: string;
+  policyId: string;
+  policyName: string;
+  description?: string;
+  severity?: 'high' | 'medium' | 'low';
+}
+
+export interface PersonValidationResult {
+  personId: string;
+  passed: boolean;
+  violations?: ValidationViolation[];
+}
+
+export interface ValidateResponse {
+  validationResults: PersonValidationResult[];
+  timestamp?: string;
+}
+
 export const POLICY_TYPE_LABELS: Record<PolicyType, string> = {
   academic: 'Academic',
   conduct: 'Conduct',
