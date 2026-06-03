@@ -60,4 +60,4 @@ htmlcov/
 .pytype/
 !dist/docker-bake.hcl
 !dist/dockerfile
-!dist/.env
+!dist/.env.example
