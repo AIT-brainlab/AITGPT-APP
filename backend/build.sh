@@ -1,28 +1,22 @@
 #!/bin/bash
 
 # The script try to realize the VERSION based on 
-# 1. git tag
-# if missing git tag,
+# 1. User version input
+# 2. If no user input, then use the version from uv version
 
-export TAG=$(git tag --points-at HEAD)
+VERSION=$1
 
-# if this commit has a tag
-if TAG
-
-export VERSION=$(uv version --short)
-echo "Current version: $VERSION"
-
-NEW_VERSION=$1
-
-if [[ -z "$NEW_VERSION" ]]; then
+if [[ -z "$VERSION" ]]; then
     read -p "Do you want to change the version? (y/N): " CHANGE_VERSION
     if [[ "$CHANGE_VERSION" =~ ^[Yy]$ ]]; then
-        read -p "Enter new version: " NEW_VERSION
+        read -p "Enter new version: " VERSION
+    else
+        VERSION=$(uv version --short)
     fi
 fi
 
-if [[ -n "$NEW_VERSION" ]]; then
-    VERSION=$(uv version ${NEW_VERSION} --short)
+if [[ -n "$VERSION" ]]; then
+    VERSION=$(uv version ${VERSION} --short)
 fi
 
 export TAG="v${VERSION}"

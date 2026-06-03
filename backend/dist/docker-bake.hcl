@@ -18,10 +18,10 @@ target "backend" {
 
   args = {
     BUILD_VERSION = "${TAG}"
-    WORKDIR       = "/Projects/backend"
+    WORKDIR       = "/Projects/app/backend"
     TAG           = "${TAG}"
     VERSION       = "${VERSION}"
-    PACKAGE_NAME  = "${PACKAGE_NAME}"
+    // PACKAGE_NAME  = "${PACKAGE_NAME}"
   }
 
   contexts = {
