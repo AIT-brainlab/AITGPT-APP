@@ -1,3 +1,28 @@
-include:
-  - docker-compose.db.yml
-  - docker-compose.web.yml
+services:
+  backend:
+    image: ${PROJECT_NAME}:latest
+    container_name: ${PROJECT_NAME}
+    platform: linux/amd64
+    ports:
+      - 8000:8000
+    env_file:
+      - .env
+    environment:
+      - LANGFLOW_API_URL=${LANGFLOW_API_URL}
+      - LANGFLOW_API_KEY=${LANGFLOW_API_KEY}
+      - LANGFLOW_RUN_ID=${LANGFLOW_RUN_ID}
+  db:
+    image: postgres:15
+    container_name: aitgpt_backend_db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
