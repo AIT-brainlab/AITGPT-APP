@@ -380,6 +380,54 @@ docker compose -f docker-compose.db.yml up -d
 
 This starts PostgreSQL on port 5432 with persistent volume storage.
 
+### Hybrid Local Deployment (Dev Containers + Docker Compose)
+
+This is the recommended setup when backend and compliance run inside VS Code Dev Containers, while frontend and LdapAuth run via Docker Compose from the terminal.
+
+| Service | How to run | Port |
+|---------|------------|------|
+| Frontend | `docker compose up --build` in `frontend/` | 3000 |
+| Backend | Backend devcontainer → `uv run django_manage.py runserver 0.0.0.0:8000` | 8000 |
+| Compliance | Compliance devcontainer → `policy-api` | 8005 |
+| LdapAuth | `docker compose up` in `LdapAuth/` | 8001 (internal network) |
+
+#### One-time setup
+
+```bash
+# Shared Docker network for frontend, backend, and LdapAuth
+docker network create aitgpt_network
+```
+
+Create `frontend/.env` (or export before `docker compose up`):
+
+```bash
+VITE_API_URL=http://localhost:8000
+VITE_POLICY_API_URL=http://localhost:8005
+```
+
+#### Startup order
+
+1. **Backend devcontainer** — open `backend/` in VS Code → Reopen in Container → migrate → runserver on port 8000
+2. **Compliance devcontainer** — open `AITGPT-compliance-checking/` in VS Code → Rebuild and Reopen in Container (publishes port 8005)
+3. Inside compliance devcontainer:
+   ```bash
+   # Ensure .env uses POSTGRES_HOST=postgres for in-container DB access
+   uv run policy-seed    # one-time (or after DB reset)
+   policy-api            # starts compliance REST API on :8005
+   ```
+4. **LdapAuth** — `cd LdapAuth && docker compose up -d`
+5. **Frontend** — `cd frontend && docker compose up --build -d`
+
+#### Smoke tests
+
+```bash
+curl http://localhost:8000/api/tasks/health/     # Django backend
+curl http://localhost:8005/api/persons           # Compliance persons list
+curl http://localhost:8005/docs                  # Compliance Swagger UI
+```
+
+Then open `http://localhost:3000` → **Check Policy** → persons should load from the compliance API.
+
 ---
 
 ## 7. Deployment
@@ -450,6 +498,7 @@ The frontend `api.ts` checks for `window.__API_BASE_URL__` first, then falls bac
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `VITE_API_URL` | Yes | `http://localhost:8000` | Backend API base URL |
+| `VITE_POLICY_API_URL` | No | `http://localhost:8005` | Compliance / policy-checker API (persons, policy upload) |
 
 ### Backend (.env)
 

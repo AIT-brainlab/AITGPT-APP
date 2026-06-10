@@ -7,11 +7,13 @@ import { AlertCircle, Loader } from 'lucide-react';
 interface PersonListProps {
   selectedPersonIds: Set<string>;
   onSelectionChange: (personIds: Set<string>) => void;
+  onPersonsLoaded?: (persons: Person[]) => void;
 }
 
 export const PersonList: React.FC<PersonListProps> = ({
   selectedPersonIds,
   onSelectionChange,
+  onPersonsLoaded,
 }) => {
   const [persons, setPersons] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +26,9 @@ export const PersonList: React.FC<PersonListProps> = ({
         setError(null);
         const data = await fetchPersons();
         setPersons(data);
+        if (onPersonsLoaded) {
+          onPersonsLoaded(data);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load persons');
       } finally {

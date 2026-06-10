@@ -71,10 +71,7 @@ export function PolicyMenuButton({ user, isWide, onToast, onUploadSuccess }: Pol
   };
 
   const handleValidationComplete = (results: ValidateResponse) => {
-    setCheckPolicyOpen(false);
-    onToast('Validation completed', 'success');
-    // TODO: Display validation results
-    // For now, just close the modal and show success toast
+    onToast('Compliance check completed', 'success');
   };
 
   return (

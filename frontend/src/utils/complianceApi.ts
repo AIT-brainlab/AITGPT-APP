@@ -1,126 +1,254 @@
 /**
- * Compliance API integration for policy checking
- * Handles communication with the compliance service (running on port 8005)
+ * Compliance API integration for policy checking.
+ * Person list and violation details come from compliance GET /api/person (real SHACL data).
+ * Validate pass/fail uses POST /api/person/validate-by-id.
  */
 
 import type {
   Person,
-  PersonListResponse,
-  ValidateRequest,
   ValidateResponse,
+  ValidationViolation,
 } from '../types/policy';
 import type { ApiResponse } from './api';
+import { getPolicyServiceBaseUrl } from './policyServiceUrl';
+import { getBackendApiUrl } from './backendApiUrl';
 
-// Get compliance API URL from runtime config or environment variable
-const getComplianceApiBaseUrl = (): string => {
-  // Priority 1: Runtime config (injected in index.html by startup script)
-  if (typeof window !== 'undefined' && window.__COMPLIANCE_API_BASE_URL__) {
-    return window.__COMPLIANCE_API_BASE_URL__;
-  }
+const COMPLIANCE_API_BASE_URL = getPolicyServiceBaseUrl();
 
-  // Priority 2: Vite environment variable
-  if (import.meta.env.VITE_COMPLIANCE_API_URL) {
-    return import.meta.env.VITE_COMPLIANCE_API_URL;
-  }
+interface ApiConform {
+  rule_id: string;
+  rule_text: string;
+  severity: string;
+  message: string;
+}
 
-  // Priority 3: Default fallback (compliance service port)
-  return 'http://localhost:8005';
+interface ApiPerson {
+  id: string;
+  name: string;
+  type: string;
+  not_conforms: ApiConform[];
+}
+
+const RULE_SEVERITY_MAP: Record<string, ValidationViolation['severity']> = {
+  AIT_0086Shape: 'high',
+  AIT_0089Shape: 'high',
+  AIT_0079Shape: 'high',
+  AIT_0090Shape: 'medium',
+  AIT_0219Shape: 'high',
+  AIT_0007Shape: 'high',
+  AIT_0070Shape: 'medium',
+  AIT_0072Shape: 'low',
+  AIT_0056Shape: 'high',
+  AIT_0100Shape: 'high',
+  AIT_0101Shape: 'high',
+  AIT_0029Shape: 'high',
 };
 
-const COMPLIANCE_API_BASE_URL = getComplianceApiBaseUrl();
+/** Map compliance not_conforms to frontend ValidationViolation shape. */
+export function mapNotConformsToViolations(
+  personId: string,
+  notConforms: ApiConform[]
+): ValidationViolation[] {
+  return (notConforms || []).map((conform) => ({
+    id: `${personId}_${conform.rule_id}`,
+    policyId: conform.rule_id,
+    policyName: conform.rule_text,
+    description: conform.message,
+    severity: RULE_SEVERITY_MAP[conform.rule_id] ?? 'high',
+  }));
+}
 
-/**
- * Fetch list of persons from compliance API
- * GET /api/persons
- */
+/** Map not_conforms to short issue strings for PersonCard bullet list. */
+export function mapNotConformsToIssueStrings(notConforms: ApiConform[]): string[] {
+  return (notConforms || []).map(
+    (conform) => conform.message || conform.rule_text
+  );
+}
+
+function mapTypeToRole(type: string): Person['role'] {
+  switch (type.toLowerCase()) {
+    case 'faculty':
+      return 'FACULTY';
+    case 'staff':
+    case 'employee':
+      return 'STAFF';
+    case 'student':
+    default:
+      return 'STUDENT';
+  }
+}
+
+async function fetchCompliancePersonsRaw(): Promise<ApiPerson[]> {
+  const url = `${COMPLIANCE_API_BASE_URL}/api/person`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch persons from compliance: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/** Fetch violations for selected persons directly from compliance (source of truth). */
+export async function fetchViolationsFromCompliance(
+  personIds: string[]
+): Promise<Array<{ personId: string; personName: string; violations: ValidationViolation[] }>> {
+  if (personIds.length === 0) {
+    return [];
+  }
+
+  const raw = await fetchCompliancePersonsRaw();
+  const idSet = new Set(personIds);
+
+  return raw
+    .filter((p) => idSet.has(p.id))
+    .map((p) => ({
+      personId: p.id,
+      personName: p.name,
+      violations: mapNotConformsToViolations(p.id, p.not_conforms ?? []),
+    }));
+}
+
 export const fetchPersonsApi = async (): Promise<ApiResponse<Person[]>> => {
   try {
-    const url = `${COMPLIANCE_API_BASE_URL}/api/persons`;
+    const raw = await fetchCompliancePersonsRaw();
+
+    const persons: Person[] = raw.map((p) => {
+      const issues = mapNotConformsToIssueStrings(p.not_conforms ?? []);
+      return {
+        id: p.id,
+        name: p.name,
+        role: mapTypeToRole(p.type),
+        status: 'ACTIVE',
+        issueCount: issues.length,
+        issues,
+      };
+    });
+
+    return { success: true, data: persons };
+  } catch (error) {
+    return {
+      success: false,
+      errors: { message: error instanceof Error ? error.message : 'Network error occurred' },
+    };
+  }
+};
+
+/** Django proxy fallback when browser cannot reach compliance directly. */
+export const fetchViolationsApi = async (
+  personIds: string[]
+): Promise<ApiResponse<{ violations: Array<{ personId: string; personName: string; violations: ValidationViolation[] }> }>> => {
+  try {
+    if (personIds.length === 0) {
+      return { success: true, data: { violations: [] } };
+    }
+
+    const backendUrl = getBackendApiUrl();
+    const queryString = new URLSearchParams({
+      personIds: personIds.join(','),
+    }).toString();
+    const url = `${backendUrl}/api/tasks/violations/?${queryString}`;
 
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
     if (!response.ok) {
       return {
         success: false,
-        errors: {
-          message: `Failed to fetch persons: ${response.statusText}`,
-        },
+        errors: { message: `Failed to fetch violations: ${response.statusText}` },
       };
     }
 
-    const responseData: PersonListResponse = await response.json();
-
-    return {
-      success: true,
-      data: responseData.persons,
-    };
+    const data = await response.json();
+    return { success: true, data: data.data };
   } catch (error) {
     return {
       success: false,
-      errors: {
-        message: error instanceof Error ? error.message : 'Network error occurred',
-      },
+      errors: { message: error instanceof Error ? error.message : 'Network error occurred' },
     };
   }
 };
 
-/**
- * Submit person IDs for validation
- * POST /api/validate
- */
+async function validatePersonById(personId: string): Promise<boolean> {
+  const url = `${COMPLIANCE_API_BASE_URL}/api/person/validate-by-id`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: personId }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Validation failed for ${personId}: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  return result === true;
+}
+
 export const validatePersonsApi = async (
   personIds: string[],
-  policyIds?: string[]
+  _policyIds?: string[]
 ): Promise<ApiResponse<ValidateResponse>> => {
   try {
-    const url = `${COMPLIANCE_API_BASE_URL}/api/validate`;
+    const validationResults = await Promise.all(
+      personIds.map(async (personId) => {
+        const passed = await validatePersonById(personId);
+        return {
+          personId,
+          passed,
+          violations: [] as ValidationViolation[],
+        };
+      })
+    );
 
-    const payload: ValidateRequest = {
-      personIds,
-      ...(policyIds && policyIds.length > 0 && { policyIds }),
-    };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        errors: {
-          message: `Validation failed: ${response.statusText}`,
-        },
-      };
+    // Primary: compliance API (same data as person list — real SHACL not_conforms)
+    let violationsByPersonId = new Map<string, ValidationViolation[]>();
+    try {
+      const fromCompliance = await fetchViolationsFromCompliance(personIds);
+      violationsByPersonId = new Map(
+        fromCompliance.map((v) => [v.personId, v.violations])
+      );
+    } catch {
+      // Fallback: Django proxy (devcontainer backend → compliance)
+      const violationsResponse = await fetchViolationsApi(personIds);
+      if (!violationsResponse.success) {
+        return {
+          success: false,
+          errors: violationsResponse.errors ?? { message: 'Failed to fetch violation details' },
+        };
+      }
+      violationsByPersonId = new Map(
+        (violationsResponse.data?.violations ?? []).map((v) => [v.personId, v.violations])
+      );
     }
 
-    const responseData: ValidateResponse = await response.json();
+    for (const result of validationResults) {
+      const personViolations = violationsByPersonId.get(result.personId);
+      if (personViolations && personViolations.length > 0) {
+        result.passed = false;
+        result.violations = personViolations;
+      }
+    }
 
     return {
       success: true,
-      data: responseData,
+      data: { validationResults },
     };
   } catch (error) {
     return {
       success: false,
       errors: {
-        message: error instanceof Error ? error.message : 'Network error occurred',
+        message: error instanceof Error ? error.message : 'Validation failed',
       },
     };
   }
 };
 
-/**
- * Service wrapper functions with error handling
- */
 export const fetchPersons = async (): Promise<Person[]> => {
   const response = await fetchPersonsApi();
 
