@@ -599,3 +599,177 @@ def chat_log_read(request: Request) -> Response:
             'query_params': dict(request.query_params)
         })
         raise DatabaseError('Failed to read chat logs. Please try again.')
+
+
+RULE_SEVERITY_MAP = {
+    'AIT_0086Shape': 'high',
+    'AIT_0089Shape': 'high',
+    'AIT_0079Shape': 'high',
+    'AIT_0090Shape': 'medium',
+    'AIT_0219Shape': 'high',
+    'AIT_0007Shape': 'high',
+    'AIT_0070Shape': 'medium',
+    'AIT_0072Shape': 'low',
+    'AIT_0056Shape': 'high',
+}
+
+
+def _map_not_conforms(person_id: str, not_conforms: list) -> list:
+    """
+    Map compliance API not_conforms (SHACL Conform) to frontend ValidationViolation shape.
+    """
+    violations = []
+    for conform in not_conforms or []:
+        rule_id = conform.get('rule_id', '')
+        rule_text = conform.get('rule_text', '')
+        message = conform.get('message', '')
+        violations.append({
+            'id': f"{person_id}_{rule_id}",
+            'policyId': rule_id,
+            'policyName': rule_text,
+            'description': message,
+            'severity': RULE_SEVERITY_MAP.get(rule_id, 'high'),
+        })
+    return violations
+
+
+def _compliance_api_urls():
+    """Candidate compliance base URLs (devcontainer / docker / host)."""
+    configured = getattr(settings, 'COMPLIANCE_API_URL', None)
+    urls = []
+    if configured:
+        urls.append(configured.rstrip('/'))
+    for candidate in (
+        'http://host.docker.internal:8005',
+        'http://compliance:8005',
+        'http://localhost:8005',
+    ):
+        if candidate not in urls:
+            urls.append(candidate)
+    return urls
+
+
+def _fetch_compliance_persons():
+    """Fetch all persons with SHACL violations from compliance GET /api/person."""
+    import requests
+
+    last_error = None
+    for compliance_api_url in _compliance_api_urls():
+        person_url = f"{compliance_api_url}/api/person"
+        try:
+            response = requests.get(person_url, timeout=60)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            last_error = e
+            continue
+    raise last_error
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def violations_check(request: Request) -> Response:
+    """
+    Get violations for specific persons.
+    Query parameters:
+      - personIds: comma-separated person IDs (e.g., ST12400,ST12402)
+      - personNames: comma-separated person names (e.g., Somchai,Priya)
+    
+    Returns: {
+      violations: [
+        {
+          personId: string,
+          personName: string,
+          violations: [
+            { id, policyId, policyName, description, severity },
+            ...
+          ]
+        },
+        ...
+      ]
+    }
+    """
+    try:
+        person_ids_param = request.query_params.get('personIds', '')
+        person_names_param = request.query_params.get('personNames', '')
+        
+        if not person_ids_param and not person_names_param:
+            return create_response(
+                errors={'message': 'Either personIds or personNames query parameter is required'},
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Parse request parameters
+        requested_ids = [pid.strip() for pid in person_ids_param.split(',') if pid.strip()]
+        requested_names = [pn.strip() for pn in person_names_param.split(',') if pn.strip()]
+        
+        try:
+            all_persons_data = _fetch_compliance_persons()
+        except Exception as e:
+            log_error(e, {'endpoint': 'violations_check', 'action': 'fetch_compliance_api',
+                          'tried_urls': _compliance_api_urls()})
+            return create_response(
+                errors={'message': 'Failed to fetch person data from compliance service'},
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        matching_persons = []
+        for person_data in all_persons_data:
+            person_id = person_data.get('id', '')
+            person_name = person_data.get('name', '')
+
+            if requested_ids and person_id in requested_ids:
+                matching_persons.append(person_data)
+            elif requested_names and person_name in requested_names:
+                matching_persons.append(person_data)
+
+        violations_result = []
+        for person_data in matching_persons:
+            person_id = person_data.get('id', '')
+            person_violations = _map_not_conforms(person_id, person_data.get('not_conforms', []))
+            violations_result.append({
+                'personId': person_id,
+                'personName': person_data.get('name', ''),
+                'violations': person_violations
+            })
+        
+        return create_response(
+            data={'violations': violations_result},
+            status_code=status.HTTP_200_OK
+        )
+    
+    except Exception as e:
+        log_error(e, {'endpoint': 'violations_check'})
+        raise DatabaseError('Failed to retrieve violations. Please try again.')
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def violations_debug(request: Request) -> Response:
+    """
+    DEBUG ENDPOINT: Show raw data from compliance API's GET /api/person.
+    """
+    try:
+        try:
+            all_persons_data = _fetch_compliance_persons()
+
+            return create_response(
+                data={
+                    'total_count': len(all_persons_data) if isinstance(all_persons_data, list) else 1,
+                    'sample_records': all_persons_data[:3] if isinstance(all_persons_data, list) else [all_persons_data],
+                    'first_person_keys': list(all_persons_data[0].keys()) if isinstance(all_persons_data, list) and all_persons_data else []
+                },
+                status_code=status.HTTP_200_OK
+            )
+        except Exception as e:
+            log_error(e, {'endpoint': 'violations_debug', 'action': 'fetch_compliance_api'})
+            return create_response(
+                errors={'message': f'Failed to fetch from compliance API: {str(e)}'},
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+    
+    except Exception as e:
+        log_error(e, {'endpoint': 'violations_debug'})
+        raise DatabaseError('Debug endpoint failed.')

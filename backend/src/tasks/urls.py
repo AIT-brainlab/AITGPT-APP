@@ -10,4 +10,6 @@ urlpatterns = [
     path('chat-log/', views.chat_log_read, name='chat_log_read'),
     path('chat-log/write/', views.chat_log_write, name='chat_log_write'),
     path('chat-log/test-logic/', views.chat_log_test_logic, name='chat_log_test_logic'),
+    path('violations/', views.violations_check, name='violations_check'),
+    path('violations-debug/', views.violations_debug, name='violations_debug'),
 ]

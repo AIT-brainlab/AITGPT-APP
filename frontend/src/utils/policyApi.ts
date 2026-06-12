@@ -1,9 +1,10 @@
 /**
  * Policy API — Compliance Checker endpoints.
- * Uses VITE_POLICY_API_URL for real compliance service (default: http://localhost:8105)
+ * Uses VITE_POLICY_API_URL for real compliance service 
  * or falls back to mock mode via policyService.ts
  */
 import { apiRequestFormData, del, get, patch } from './api';
+import { getPolicyServiceBaseUrl } from './policyServiceUrl';
 import type {
   PolicyEvaluationResult,
   PolicyListParams,
@@ -12,7 +13,7 @@ import type {
   PolicyUpdatePayload,
 } from '../types/policy';
 
-const POLICY_API_BASE_URL = import.meta.env.VITE_POLICY_API_URL || 'http://localhost:8105';
+const POLICY_API_BASE_URL = getPolicyServiceBaseUrl();
 
 const buildQuery = (params: PolicyListParams): string => {
   const q = new URLSearchParams();

@@ -178,3 +178,6 @@ LDAP_AUTH_API_KEY = os.getenv('LDAP_AUTH_API_KEY', '')
 LDAP_LOCAL_ONLY_USERS = [
     u.strip() for u in os.getenv('LDAP_LOCAL_ONLY_USERS', 'admin').split(',') if u.strip()
 ]
+
+# Compliance checking API URL
+COMPLIANCE_API_URL = os.getenv('COMPLIANCE_API_URL', 'http://localhost:8005')
