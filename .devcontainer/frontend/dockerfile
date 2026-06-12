@@ -1,0 +1,17 @@
+# Stage 1: Build the application
+FROM node:20-alpine AS builder
+ARG WORKDIR
+ENV WORKDIR=${WORKDIR}
+# Set working directory
+WORKDIR ${WORKDIR}
+# Install serve globally for serving static files and wget for healthcheck
+COPY --from=root . ${WORKDIR}
+
+RUN chmod +x ./startup.sh
+RUN npm install
+RUN npm run build
+# Expose port 3000 (default for serve)
+EXPOSE 3000
+
+# Run startup script
+CMD ["./startup.sh"]

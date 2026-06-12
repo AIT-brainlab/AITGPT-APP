@@ -4,13 +4,13 @@ set -e
 echo "Starting frontend startup script..."
 
 # Check if build directory exists
-if [ ! -d "/app/build" ] || [ -z "$(ls -A /app/build)" ]; then
+if [ ! -d "${WORKDIR}/build" ] || [ -z "$(ls -A ${WORKDIR}/build)" ]; then
     echo "Error: Build directory is empty or missing!"
     exit 1
 fi
 
 echo "Build directory found. Contents:"
-ls -la /app/build | head -10
+ls -la ${WORKDIR}/build | head -10
 
 # Inject API URL into HTML for runtime configuration
 # This allows the frontend to read the API URL from environment variables at runtime
@@ -18,7 +18,7 @@ if [ -n "$VITE_API_URL" ]; then
     echo "Injecting API URL: $VITE_API_URL"
     # Use a more robust replacement that handles the script tag properly
     # Replace the entire window.__API_BASE_URL__ assignment
-    if [ -f "/app/build/index.html" ]; then
+    if [ -f "${WORKDIR}/build/index.html" ]; then
         # Escape forward slashes and other special characters for sed
         ESCAPED_URL=$(echo "$VITE_API_URL" | sed 's|/|\\/|g' | sed 's|&|\\&|g')
         # Replace the default value in the script tag
@@ -32,7 +32,7 @@ if [ -n "$VITE_API_URL" ]; then
             echo "⚠ Warning: Could not inject API URL, using default or build-time value"
         fi
     else
-        echo "⚠ Warning: index.html not found in /app/build/"
+        echo "⚠ Warning: index.html not found in ${WORKDIR}/build/"
     fi
 else
     echo "VITE_API_URL not set, using default: http://localhost:8000"
@@ -66,4 +66,4 @@ PORT=${PORT:-3000}
 
 # Start serve
 echo "Starting serve on port $PORT..."
-exec serve -s build -l $PORT
+exec npx serve -s "${WORKDIR}/build" -l $PORT
